@@ -1,0 +1,19 @@
+{
+  "name": "miki-whatsappbot",
+  "version": "1.0.0",
+  "description": "under construction... ⚙",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CietstHydroxide/miki_whatsappbot.git"
+  },
+  "author": "CietstHydroxide",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CietstHydroxide/miki_whatsappbot/issues"
+  },
+  "homepage": "https://github.com/CietstHydroxide/miki_whatsappbot#readme"
+}
