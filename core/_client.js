@@ -1,17 +1,16 @@
 class Client {
-    static connectToWhatsapp (events) {
-        if (events.message_new) events.message_new();
+    static connect (events) {
+        if (events.message_new) events.message_new(process.argv[2]);
     }
 
-    static formatMessageData (_data = {}) {
+    static formatMessageData (messageData) {
         return {
-            type: typeof _data,
-            data: _data
+            text: messageData
         }
     }
 
-    static sendText () {
-        //woff
+    static sendText (text) {
+        console.log(text);
     }
 }
 
