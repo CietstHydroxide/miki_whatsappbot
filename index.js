@@ -1,3 +1,3 @@
-const cietst = require('./core/connection.js');
+const cietst = require('./core/main.js');
 
 cietst();

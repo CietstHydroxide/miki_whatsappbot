@@ -1,5 +1,9 @@
 class Client {
-    static prepareData (_data) {
+    static connectToWhatsapp (events) {
+        if (events.message_new) events.message_new();
+    }
+
+    static formatMessageData (_data = {}) {
         return {
             type: typeof _data,
             data: _data

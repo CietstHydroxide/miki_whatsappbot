@@ -1,8 +1,8 @@
 const Client = require('./_client.js');
 
-module.exports = (data) => {
-    const _data = Client.prepareData(data);
-
-    console.log(_data.type);
-    console.log(_data.data);
+module.exports = () => {
+    const events = {
+        message_new: () => console.log(process.argv[2])
+    }
+    Client.connectToWhatsapp(events);
 }
