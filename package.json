@@ -15,5 +15,18 @@
   "bugs": {
     "url": "https://github.com/CietstHydroxide/miki_whatsappbot/issues"
   },
-  "homepage": "https://github.com/CietstHydroxide/miki_whatsappbot#readme"
+  "homepage": "https://github.com/CietstHydroxide/miki_whatsappbot#readme",
+  "dependencies": {
+    "@adiwajshing/baileys": "^3.5.0",
+    "chalk": "^4.1.1",
+    "file-type": "^9.0.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "node-fetch": "^2.6.1",
+    "node-watch": "^0.7.1",
+    "random-case": "^1.0.0",
+    "readline-sync": "^1.4.10",
+    "regex-escape": "^3.4.10",
+    "yargs": "^17.0.1"
+  }
 }
