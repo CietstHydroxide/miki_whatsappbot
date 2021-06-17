@@ -1,3 +1,6 @@
-const cietst = require(require('yargs/yargs')(require('yargs/helpers').hideBin(process.argv)).argv.test === true ? './core/main-test.js' : './core/main.js');
+// "node index --test" to run offline test
+
+const cietst = require('./core/main.js');
 
 cietst();
+//By CietstHydroxide

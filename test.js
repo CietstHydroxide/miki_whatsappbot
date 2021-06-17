@@ -1,0 +1,1 @@
+console.log(require('@adiwajshing/baileys').WA_MESSAGE_STUB_TYPES['32'])

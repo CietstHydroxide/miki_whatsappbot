@@ -1,19 +1,23 @@
-function main (m, next) {
-    const language = m.getLanguagePref();
-    if (Fun.ownerNumber() !== m.message_sender) return m.replyText(Fun.TEXT[language].owner_only).then(next);
-    const _code = m.command.argument || m.quoted?.message_text;
-    if (!_code) return m.replyText(TEXT[language].help(m.command.prefix)).then(next);
-    let result, start, end;
+function main (message, command) {
+    if (MIKI.getOwnerJid() !== message.sender) return message.replyText(MIKI.TEXT[message.language].owner_only).then(command.next);
+    if (!command.argument) return message.replyText(TEXT[message.language].help(command.prefix)).then(command.next);
+    let evalReturn, evalReturnOriginal, startTime, endTime, $$ = command.previousResult?.evalReturn || TEMPDATA.system.evalReturnHistory;
     try {
-        start = new Date().getTime();
-        result = eval(_code);
+        startTime = new Date().getTime();
+        // is it eval()?
+        evalReturn = eval(command.argument);
+        // yeah, idc.
+        evalReturnOriginal = evalReturn;
     } catch (e) {
-        result = e.stack;
+        evalReturn = e.stack;
         console.log(e);
     } finally {
-        end = new Date().getTime();
-        if (String(result) === '[object Object]') result = JSON.stringify(result, null, '  ');
-        m.replyText(TEXT[language].result(result, end-start)).then(next);
+        endTime = new Date().getTime();
+        if (String(evalReturn) === '[object Object]') evalReturn = JSON.stringify(evalReturn, null, '  ');
+        const text = new String(TEXT[message.language].result(evalReturn, endTime - startTime));
+        text.evalReturn = evalReturnOriginal;
+        TEMPDATA.system.evalReturnHistory = evalReturnOriginal;
+        message.replyText(text).then(command.next);
     }
 }
 
@@ -35,10 +39,18 @@ main.description = {
         id: '%_eval console.log(\'Hai!\');'
     },
     additional: {
-        en: '⚠ Potentially destructive command!\nOnly the bot owner is able to run this command.',
-        id: '⚠ Perintah berpotensi merusak!\nHanya pemilik bot yang dapat menjalankan perintah ini.'
+        en: {
+            a: '⚠ Potentially destructive command!',
+            b: '*Only the bot owner is able to run this command.*',
+            c: 'Pro tip: Use $$ variable to access the result of the previous eval command.'
+        },
+        id: {
+            a: '⚠ Perintah berpotensi merusak!',
+            b: '*Hanya pemilik bot yang dapat menjalankan perintah ini.*',
+            c: 'Pro tip: Gunakan variabel $$ untuk mengakses hasil dari perintah eval sebelumnya.'
+        }
     }
-}; var TEXT = Fun.formatHelpText(main.description);
+}; var TEXT = MIKI.formatHelpText(main.description);
 
 TEXT.id.result = (result, speed)=>
 `*Hasil:* ${result}

@@ -26,7 +26,6 @@
     "node-watch": "^0.7.1",
     "random-case": "^1.0.0",
     "readline-sync": "^1.4.10",
-    "regex-escape": "^3.4.10",
     "yargs": "^17.0.1"
   }
 }

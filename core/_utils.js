@@ -1,13 +1,10 @@
 const randomCase = require('random-case');
 const fetch = require('node-fetch');
-const moment = require('moment');
-const lodash = require('lodash');
 const fs = require('fs');
-const FileType = require('file-type')
+const FileType = require('file-type');
+const _ = require('lodash');
 
-class Fun {
-    static _ = lodash;
-
+class Utilities {
     static TEXT = {
         id: {
             owner_only: '{ Hanya pemilik bot yang dapat menjalankan perintah ini. }',
@@ -23,29 +20,30 @@ class Fun {
         }
     }
 
-    static ownerNumber () {
+    static getOwnerJid () {
         return `${BOTSETTINGS.owner}@s.whatsapp.net`;
     }
 
-    static generateRandomString (length = 12, string = '0987654321abcdefghijklmnopqrstuvwxyz', repeat = true) {
-        if (repeat) return randomCase([...Array(length)].map(_=> this.selectRandom(string)).join(''));
-        return randomCase(this.shuffleArray(Array.from(new Set(string)).join('')).slice(0,length));
+    static isValidJid (jid) {
+        return /^[0-9]{5,16}@s\.whatsapp\.net$/.test(jid);
     }
 
-    static selectRandom (array) {
-        return array[Math.floor(Math.random()*array.length)];
+    static isValidGid (gid) {
+        return /^[0-9]{5,16}-[0-9]{10}@g\.us$/.test(gid);
     }
 
-    static shuffleArray (array) {
-        let temp, currentIndex, last = array.length, arr = typeof array === 'string' ? array.split('') : Array.isArray(array) ? array : null;
-        if (!last) return arr;
-        while (--last) {
-            currentIndex = Math.floor(Math.random()*last+1);
-            temp = arr[currentIndex];
-            arr[currentIndex] = arr[last];
-            arr[last] = temp;
-        }
-        return typeof array === 'string' ? arr.join('') : arr;
+    static jidToMention (jid) {
+        if (!this.isValidJid(jid)) return;
+        return '@' + jid.split('@')[0];
+    }
+
+    static pause (durationInMs) {
+        return new Promise((resolve)=> setTimeout(()=> resolve(), durationInMs));
+    }
+
+    static getRandomString (length, repeat = true, string = '0987654321abcdefghijklmnopqrstuvwxyz') {
+        if (repeat) return randomCase(_.times(length || 12, ()=> _.sample(string)).join(''));
+        return randomCase(_.shuffle(_.uniq(string)).join('')).slice((length || 12) + 1);
     }
 
     static async saveFile (data, ext) {
@@ -57,46 +55,40 @@ class Fun {
         else file = Buffer.alloc(1);
         let id;
         do {
-            id = this.generateRandomString(6);
+            id = this.getRandomString(6);
         } while (fs.readdirSync('./tmp/').map(v=> v.replace(/\..+$/, '')).indexOf(id) !== -1);
         let type = ext;
         if (!ext) type = FileType(file);
-        const filename = id + (ext ? '.' + type: type?.ext ? '.' + type.ext : '');
-        fs.writeFileSync('./tmp/'+filename, file);
-        return filename;
-    }
-
-    static getRandomNumber (min, max) {
-        return Math.floor(Math.random()*(max-min))+min;
+        const filename = id + (ext ? '.' + ext : type?.ext ? '.' + type.ext : '');
+        fs.writeFileSync('./tmp/' + filename, file);
+        return './tmp/' + filename;
     }
 
     static formatHelpText (description) {
         const dict = {
-            en: {
-                head: ['Format', 'Function', 'Example']
-            },
-            id: {
-                head: ['Format', 'Fungsi', 'Contoh']
-            }
+            en: { head: ['Format', 'Function', 'Example', 'Synonyms'] },
+            id: { head: ['Format', 'Fungsi', 'Contoh', 'Sinonim'] }
         };
 
         let languages = [], formatted = {};
         for (const i in description) {
-            languages = [...languages, ...Object.keys(description[i])];
+            languages.push(Object.keys(description[i]));
         }
-        for (const i of Array.from(new Set(languages))) {
+        for (const i of _.uniq(languages)) {
             formatted[i] = {};
             const format = (description.format[i] ? description.format[i] : description.format.en) || '';
             const usage = (description.usage[i] ? description.usage[i] : description.usage.en) || '';
             const example = (description.example[i] ? description.example[i] : description.example.en) || '';
-            const additional = (description.additional[i] ? description.additional[i] : description.additional.en) || '';
+            const synonym = description.synonym ? (description.synonym[i] ? description.synonym[i] : description.synonym.en) || '' : '';
+            const _additional = description.additional ? (description.additional[i] ? description.additional[i] : description.additional.en) || '' : '';
+            const additional = typeof _additional === 'object' ? Object.values(_additional).map((v)=> '• ' + v).join('\n') : _additional;
             formatted[i].help = (p)=> {
-                const text = `*${dict[i].head[0]}:* ${format}\n\n*${dict[i].head[1]}:* ${usage}\n\n*${dict[i].head[2]}:* ${example}\n\n${additional}`
+                const text = `*${dict[i].head[0]}:* ${format}\n\n*${dict[i].head[1]}:* ${usage}\n\n*${dict[i].head[2]}:* ${example}\n\n*${dict[i].head[3]}:* ${synonym || '-'}${additional ? '\n\n' + additional : ''}`
                     .replace(/%_/g, p);
                 return text;
             }
         }
-        return formatted;
+        return formatted; // { id: { help: (p)=> { ... } }, en: { help: (p)=> { ... } } }
     }
 
     static async fetchJSON (url, opts) {
@@ -105,12 +97,12 @@ class Fun {
         return json;
     }
 
-    static async fetchCietstAPI (api, data, method = 'GET') {
+    static async fetchCietstAPI (API, data, method = 'GET') {
         if (method === 'GET') {
-            const result = await this.fetchJSON(`http://localhost:3000/api/${api}?q=${data}`);
+            const result = await this.fetchJSON(`http://localhost:3000/api/${API}?q=${data}`);
             return result;
         }
     }
 }
 
-module.exports = Fun;
+module.exports = Utilities;

@@ -1,66 +1,82 @@
-async function main () {
+const testMode = require('yargs/yargs')(require('yargs/helpers').hideBin(process.argv)).argv.test === true;
 
-    const fs = require('fs');
-    const watch = require('node-watch');
-    const Baileys = require('@adiwajshing/baileys');
-    const Database = require('./_database.js');
-    let Command = require('./_command.js');
-    let { Client, Message } = require('./_client.js');
+let fs, Baileys, Database, Client, Message,
+Command = require('./_command.js'),
+watchFile = require('node-watch');
 
-    global.Fun = require('../core/_funs.js');
-    global.TEMPDATA = { users: {}, chats: {}, system: {} };
-    global.DATABASE = new Database('./core/database/data.json');
-    global.BOTSETTINGS = require('../bot_settings.json');
-    global.COMMANDS = { main: {}, aresp: {} };
-    Command.loadAll();
-
-    const WA = new Client();
-    WA.loadAuthInfo('./core/client/session.json');
-    WA.browserDescription = Baileys.Browsers.ubuntu('Chrome');
-    WA.connect();
-    WA.on('open', ()=> { fs.writeFileSync('./core/client/session.json', JSON.stringify(WA.base64EncodedAuthInfo(), null, '\t')); });
-    WA.on('close', ()=> {});
-    WA.on('chat-update', async (chatUpdate)=> {
-        if (!chatUpdate.hasNewMessage) return;
-        try {
-            const m = new Message(chatUpdate, WA);
-            await m.printMessage();
-            if (!m.is_message) return;
-            const cmd = new Command(m);
-            if (!cmd.is_command) return;
-            cmd.parse();
-            cmd.start();
-        } catch (e) {
-            console.log(e);
-        }
-    });
-
-    setInterval(()=> DATABASE.save(), 60000);
-    process.on('exit', ()=> DATABASE.save());    
-
-    watch('./bot_settings.json', (event, file)=> {
-        delete require.cache[require.resolve('../'+file)];
-        if (event === 'update') BOTSETTINGS = require('../bot_settings.json');
-    });
-    watch('./commands/', (event,file)=> {
-        if (!/\.js$/.test(file)) return;
-        delete require.cache[require.resolve('../'+file.replace(/\\/g, '/'))];
-        if (event === 'remove') delete COMMANDS.main[file];
-        else Command.loadAll();
-    });
-    watch(['./core/_client.js', './core/_command.js', './core/_funs.js'], (event, file)=> {
-        console.log(event, file);
-        if (event === 'update') {
-            const _mod = file.replace('core\\', '');
-            delete require.cache[require.resolve('../core/'+_mod)];
-            if (_mod === '_client.js') {
-                Client = require('../core/_client.js').Client;
-                Message = require('../core/_client.js').Message;
-            }
-            if (_mod === '_command.js') Command = require('../core/_command.js');
-            if (_mod === '_funs.js') Fun = require('../core/_funs.js');
-        }
-    });
+if (testMode) {
+    Command = require('./_command.js');
+    Client = require('./_client-test.js').Client;
+    Message = require('./_client-test.js').Message;
+} else {
+    fs = require('fs');
+    Baileys = require('@adiwajshing/baileys');
+    Database = require('./_database.js');
+    Client = require('./_client.js').Client;
+    Message = require('./_client.js').Message;
 }
 
-module.exports = main;
+global.MIKI = require('../core/_utils.js');
+global.TEMPDATA = { users: {}, groupChats: {}, chatRooms: {}, system: {} };
+global.DATABASE = new Database(testMode ? './core/database/data-test.json' : './core/database/data.json');
+global.BOTSETTINGS = require('../bot_settings.json');
+global.COMMANDS = { main: {}, aresp: {} };
+Command.loadAllFunc();
+
+async function handleMessage (incomingMessage) {
+    if (!testMode && !incomingMessage.hasNewMessage) return;
+    try {
+        const message = new Message(incomingMessage, WA);
+        if (testMode) await message.parseMessage();
+        await message.printMessage();
+        Object.values(COMMANDS.aresp).forEach(v=> v(message));
+        if (!message.isMessage) return;
+        const cmd = new Command(message);
+        cmd.start();
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+module.exports = async ()=> {
+    const WA = new Client();
+    if (testMode) WA.on_('chat-update', handleMessage);
+    else {
+        WA.loadAuthInfo('./core/client/session.json');
+        WA.browserDescription = Baileys.Browsers.ubuntu('Chrome');
+        WA.connect();
+        WA.on('open', ()=> { fs.writeFileSync('./core/client/session.json', JSON.stringify(WA.base64EncodedAuthInfo(), null, '\t')); });
+        WA.on('close', ()=> {});
+        WA.on('chat-update', handleMessage);
+    }
+}
+
+
+setInterval(()=> DATABASE.save(), 60000);
+process.on('exit', ()=> DATABASE.save());
+watchFile('./bot_settings.json', (event, file)=> {
+    console.log(event, file);
+    delete require.cache[require.resolve('../'+file)];
+    if (event === 'update') BOTSETTINGS = require('../bot_settings.json');
+});
+watchFile('./commands/', (event,file)=> {
+    if (!/\.js$/.test(file)) return;
+    console.log(event, file);
+    delete require.cache[require.resolve('../'+file.replace(/\\/g, '/'))];
+    if (event === 'remove') delete COMMANDS.main[file];
+    else Command.loadAllFunc();
+});
+const clientFile = testMode ? './core/_client-test.js' : './core/_client.js';
+watchFile([clientFile, './core/_command.js', './core/_funs.js'], (event, file)=> {
+    console.log(event, file);
+    if (event === 'update') {
+        const moduleName = file.replace('core\\', '');
+        delete require.cache[require.resolve('../core/' + moduleName)];
+        if (moduleName === clientFile.replace('./core/', '')) {
+            Client = require('.' + clientFile).Client;
+            Message = require('.' + clientFile).Message;
+        }
+        if (moduleName === '_command.js') Command = require('../core/_command.js');
+        if (moduleName === '_funs.js') Fun = require('./_utils.js');
+    }
+});

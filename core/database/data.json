@@ -1,6 +1,6 @@
 {
 	"users": {},
-	"groups": {},
-	"chats": {},
+	"groupChats": {},
+	"chatRooms": {},
 	"system": {}
 }
