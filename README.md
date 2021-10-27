@@ -1,3 +1,3 @@
-# miki_whatsappbot
+# Miki WhatsApp Bot
 
-under construction... ⚙
+## 🚀 Moved to [@riozec/miki-whatsappbot](https://github.com/riozec/miki-whatsappbot)
